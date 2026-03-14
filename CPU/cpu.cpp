@@ -1,32 +1,29 @@
 #include "cpu.h"
 #include <iostream>
 
-CPU::CPU(sc_module_name name) : sc_module(name) {
-    SC_THREAD(generate_traffic);
-    sensitive << clk.pos();
-    async_reset_signal_is(rst, true);
+CPU::CPU(sc_module_name name)
+: sc_module(name), socket("socket")
+{
+    SC_THREAD(run);
 }
 
-void CPU::generate_traffic() {
-    start_dma.write(false);
-    start_nvdla.write(false);
+void CPU::run()
+{
+    wait(10, SC_NS);
 
-    wait(); // wait for reset
+    tlm::tlm_generic_payload trans;
+    sc_time delay = SC_ZERO_TIME;
 
-    while (true) {
-        wait();
+    uint32_t start = 1;
 
-        start_dma.write(true);
-        dma_addr.write(0x1000);
-        wait();
-        start_dma.write(false);
+    trans.set_command(tlm::TLM_WRITE_COMMAND);
+    trans.set_address(0x40000000);
+    trans.set_data_ptr((unsigned char*)&start);
+    trans.set_data_length(4);
 
-        wait(5, SC_NS);
+    socket->b_transport(trans, delay);
 
-        start_nvdla.write(true);
-        wait();
-        start_nvdla.write(false);
+    wait(delay);
 
-        wait(50, SC_NS);
-    }
+    std::cout << sc_time_stamp() << " CPU started NVDLA\n";
 }

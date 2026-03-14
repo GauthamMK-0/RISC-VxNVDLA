@@ -1,61 +1,60 @@
+// ============================================================================
+// top.cpp  –  TLM-2.0 SoC top-level netlist
+//
+// Topology:
+//
+//   CPU (initiator) ──┐
+//                     ├──► AXI_IC ──► NVDLA  (0x40000000 – 0x4FFFFFFF)
+//   DMA (initiator) ──┘         └──► MEMORY  (0x00000000 – 0x0FFFFFFF)
+//
+//   NVDLA.irq ──► IRQ controller ──► cpu_irq_sig (sc_signal)
+//
+// ============================================================================
+
 #include <systemc>
-#include "../Memory/memory.h"
 #include "../CPU/cpu.h"
-#include "../NVDLA/nvdla.h"
 #include "../DMA/dma.h"
+#include "../Memory/memory.h"
+#include "../NVDLA/nvdla.h"
+#include "../bus/axi_interconnect.h"
 #include "../IRQ/irq.h"
 
-int sc_main(int argc, char* argv[]) {
-    sc_signal<bool> clk, rst;
-    sc_signal<bool> cpu_start_dma, cpu_start_nvdla;
-    sc_signal<unsigned int> dma_addr;
-    sc_signal<bool> nvdla_busy, nvdla_irq;
-    sc_signal<bool> dma_done;
-    sc_signal<bool> cpu_irq;
-    sc_signal<bool> mem_req;
-    sc_signal<unsigned int> mem_addr;
-    sc_signal<bool> mem_ready;
+using namespace sc_core;
 
-    // Instantiate modules
-    CPU cpu("CPU");
-    cpu.clk(clk); cpu.rst(rst);
-    cpu.start_dma(cpu_start_dma);
-    cpu.dma_addr(dma_addr);
-    cpu.start_nvdla(cpu_start_nvdla);
+int sc_main(int argc, char* argv[])
+{
+    // ── Signals ──────────────────────────────────────────────────────────────
+    sc_signal<bool> nvdla_irq_sig("nvdla_irq_sig");
+    sc_signal<bool> cpu_irq_sig  ("cpu_irq_sig");
 
-    DMA dma("DMA");
-    dma.clk(clk); dma.rst(rst);
-    dma.start(cpu_start_dma); dma.addr(dma_addr);
-    dma.done(dma_done);
+    // ── Module instantiation ─────────────────────────────────────────────────
+    CPU     cpu    ("CPU");
+    DMA     dma    ("DMA");
+    AXI_IC  ic     ("AXI_IC");
+    NVDLA   nvdla  ("NVDLA");
+    MEMORY  memory ("MEMORY");
+    IRQ     irq_ctrl("IRQ");
 
-    NVDLA nvdla("NVDLA");
-    nvdla.clk(clk); nvdla.rst(rst);
-    nvdla.start(cpu_start_nvdla);
-    nvdla.busy(nvdla_busy);
-    nvdla.irq(nvdla_irq);
+    // ── TLM socket bindings ──────────────────────────────────────────────────
+    // Masters → Interconnect slave ports
+    cpu.socket      .bind(ic.cpu_socket);
+    dma.mem_socket  .bind(ic.dma_socket);
 
-    IRQ_CTRL irq("IRQ");
-    irq.clk(clk); irq.rst(rst);
-    irq.nvdla_irq(nvdla_irq);
-    irq.dma_done(dma_done);
-    irq.cpu_irq(cpu_irq);
+    // Interconnect master ports → Slaves
+    ic.nvdla_socket .bind(nvdla.socket);
+    ic.mem_socket   .bind(memory.socket);
 
-    DRAM mem("MEM");
-    mem.clk(clk); mem.rst(rst);
-    mem.req(mem_req); mem.addr(mem_addr); mem.ready(mem_ready);
+    // ── Interrupt signal bindings ────────────────────────────────────────────
+    nvdla.irq       (nvdla_irq_sig);
+    irq_ctrl.nvdla_irq(nvdla_irq_sig);
+    irq_ctrl.cpu_irq  (cpu_irq_sig);
 
-    // Simulation clock
-    sc_time period(10, SC_NS);
-    sc_start(0, SC_NS);
-    rst = true;
-    clk = false;
-    sc_start(period);
-    rst = false;
+    // ── Run simulation long enough to capture all events ─────────────────────
+    // Timeline: CPU@10ns, DMA@~200ns, NVDLA-finish@~550ns + 10ns IRQ pulse
+    sc_start(700, SC_NS);
 
-    for (int i = 0; i < 50; i++) {
-        clk = !clk;
-        sc_start(period);
-    }
+    std::cout << "\n[sim] Simulation complete at "
+              << sc_time_stamp() << std::endl;
 
     return 0;
 }

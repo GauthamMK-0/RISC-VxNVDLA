@@ -2,18 +2,18 @@
 #define CPU_H
 
 #include <systemc>
-using namespace sc_core;
-using namespace sc_dt;
+#include <tlm>
+#include <tlm_utils/simple_initiator_socket.h>
 
-SC_MODULE(CPU) {
-    sc_in<bool> clk;
-    sc_in<bool> rst;
-    sc_out<bool> start_dma;
-    sc_out<unsigned int> dma_addr;
-    sc_out<bool> start_nvdla;
+using namespace sc_core;
+
+struct CPU : sc_module {
+
+    tlm_utils::simple_initiator_socket<CPU> socket;
 
     SC_CTOR(CPU);
-    void generate_traffic();
+
+    void run();
 };
 
 #endif

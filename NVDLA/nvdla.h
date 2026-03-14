@@ -2,20 +2,24 @@
 #define NVDLA_H
 
 #include <systemc>
+#include <tlm>
+#include <tlm_utils/simple_target_socket.h>
+
 using namespace sc_core;
-using namespace sc_dt;
 
-SC_MODULE(NVDLA) {
-    sc_in<bool> clk;
-    sc_in<bool> rst;
-    sc_in<bool> start;
-    sc_out<bool> busy;
-    sc_out<bool> irq;
+struct NVDLA : sc_module {
 
-    unsigned int compute_latency;
+    tlm_utils::simple_target_socket<NVDLA> socket;
+
+    sc_out<bool> irq;   // interrupt output to IRQ controller
+
+    uint32_t ctrl;
+    uint32_t status;
 
     SC_CTOR(NVDLA);
-    void compute_process();
+
+    void b_transport(tlm::tlm_generic_payload& trans, sc_time& delay);
+    void compute();
 };
 
 #endif

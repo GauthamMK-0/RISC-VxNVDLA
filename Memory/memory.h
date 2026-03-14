@@ -2,20 +2,20 @@
 #define MEMORY_H
 
 #include <systemc>
+#include <tlm>
+#include <tlm_utils/simple_target_socket.h>
+
 using namespace sc_core;
-using namespace sc_dt;
 
-SC_MODULE(DRAM) {
-    sc_in<bool> clk;
-    sc_in<bool> rst;
-    sc_in<bool> req;
-    sc_in<unsigned int> addr;
-    sc_out<bool> ready;
+struct MEMORY : sc_module {
 
-    unsigned int memory_latency;
+    tlm_utils::simple_target_socket<MEMORY> socket;
 
-    SC_CTOR(DRAM);
-    void process_request();
+    unsigned char mem[1024 * 1024];
+
+    SC_CTOR(MEMORY);
+
+    void b_transport(tlm::tlm_generic_payload& trans, sc_time& delay);
 };
 
 #endif
