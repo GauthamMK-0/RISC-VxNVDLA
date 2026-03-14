@@ -1,0 +1,29 @@
+# SystemC build files
+*.o
+*.d
+soc_sim
+
+# Logs and output files
+logs/
+*.log
+*.csv
+
+# Backup files
+*~
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE / editor configs
+.vscode/
+.idea/
+*.user
+*.vscode/
+*.code-workspace
+
+# Misc
+*.bak
+*.tmp
