@@ -8,6 +8,7 @@ using namespace sc_core;
 struct IRQ : sc_module {
 
     sc_in<bool> nvdla_irq;
+    sc_in<bool> dma_irq;
     sc_out<bool> cpu_irq;
 
     SC_CTOR(IRQ);

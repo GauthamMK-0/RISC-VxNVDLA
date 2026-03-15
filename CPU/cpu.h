@@ -11,6 +11,8 @@ struct CPU : sc_module {
 
     tlm_utils::simple_initiator_socket<CPU> socket;
 
+    sc_in<bool> irq_in;
+
     SC_CTOR(CPU);
 
     void run();

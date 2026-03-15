@@ -4,10 +4,12 @@
 // Topology:
 //
 //   CPU (initiator) ──┐
-//                     ├──► AXI_IC ──► NVDLA  (0x40000000 – 0x4FFFFFFF)
-//   DMA (initiator) ──┘         └──► MEMORY  (0x00000000 – 0x0FFFFFFF)
+//                     ├──► AXI_IC ──┬──► NVDLA  (0x40000000 – 0x4FFFFFFF)
+//   DMA (initiator) ──┘             ├──► DMA    (0x50000000 – 0x5FFFFFFF)
+//                                   └──► MEMORY  (0x00000000 – 0x0FFFFFFF)
 //
-//   NVDLA.irq ──► IRQ controller ──► cpu_irq_sig (sc_signal)
+//   NVDLA.irq ──┬──► IRQ controller ──► cpu_irq_sig (sc_signal) ──► CPU.irq_in
+//   DMA.irq_out ┘
 //
 // ============================================================================
 
@@ -25,6 +27,7 @@ int sc_main(int argc, char* argv[])
 {
     // ── Signals ──────────────────────────────────────────────────────────────
     sc_signal<bool> nvdla_irq_sig("nvdla_irq_sig");
+    sc_signal<bool> dma_irq_sig  ("dma_irq_sig");
     sc_signal<bool> cpu_irq_sig  ("cpu_irq_sig");
 
     // ── Module instantiation ─────────────────────────────────────────────────
@@ -41,17 +44,23 @@ int sc_main(int argc, char* argv[])
     dma.mem_socket  .bind(ic.dma_socket);
 
     // Interconnect master ports → Slaves
-    ic.nvdla_socket .bind(nvdla.socket);
-    ic.mem_socket   .bind(memory.socket);
+    ic.nvdla_socket   .bind(nvdla.socket);
+    ic.mem_socket     .bind(memory.socket);
+    ic.dma_ctrl_socket.bind(dma.target_socket);
 
     // ── Interrupt signal bindings ────────────────────────────────────────────
     nvdla.irq       (nvdla_irq_sig);
+    dma.irq_out     (dma_irq_sig);
+    
     irq_ctrl.nvdla_irq(nvdla_irq_sig);
+    irq_ctrl.dma_irq  (dma_irq_sig);
     irq_ctrl.cpu_irq  (cpu_irq_sig);
+    
+    cpu.irq_in      (cpu_irq_sig);
 
     // ── Run simulation long enough to capture all events ─────────────────────
-    // Timeline: CPU@10ns, DMA@~200ns, NVDLA-finish@~550ns + 10ns IRQ pulse
-    sc_start(700, SC_NS);
+    // Timeline: CPU@10ns kicks NVDLA, waits IRQ, then kicks DMA, waits IRQ.
+    sc_start(1000, SC_NS);
 
     std::cout << "\n[sim] Simulation complete at "
               << sc_time_stamp() << std::endl;
