@@ -17,7 +17,7 @@ SRC = CPU/cpu.cpp \
       Memory/memory.cpp \
       NVDLA/nvdla.cpp \
       bus/axi_interconnect.cpp \
-      IRQ/irq.cpp \
+      IRQ/plic.cpp \
       top/top.cpp
 
 OBJ    = $(SRC:.cpp=.o)

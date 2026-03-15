@@ -6,7 +6,6 @@ CPU::CPU(sc_module_name name)
 : sc_module(name), socket("socket")
 {
     SC_THREAD(run);
-    // Initialize scratchpad
     for (int i = 0; i < 1024; i++) l1_scratchpad[i] = 0;
 }
 
@@ -16,56 +15,105 @@ void CPU::run()
 
     tlm::tlm_generic_payload trans;
     sc_time delay = SC_ZERO_TIME;
-    uint32_t data = 1;
+    uint32_t data;
 
-    // --- Local Scratchpad Access ---
-    std::cout << sc_time_stamp() << " CPU: initializing local scratchpad\n";
-    l1_scratchpad[0] = 0xAA;
-    l1_scratchpad[1] = 0xBB;
-    std::cout << sc_time_stamp() << " CPU: local scratchpad[0] = " << (int)l1_scratchpad[0] << "\n";
-
-    // 1. Kick NVDLA
-    std::cout << sc_time_stamp() << " CPU: kicking NVDLA...\n";
+    std::cout << sc_time_stamp() << " CPU: Booting and initializing PLIC...\n";
+    
+    // Enable IRQs in PLIC
+    data = (1 << (IRQ_ID_NVDLA - 1)) | (1 << (IRQ_ID_DMA - 1));
     trans.set_command(tlm::TLM_WRITE_COMMAND);
-    trans.set_address(NVDLA_BASE);
+    trans.set_address(PLIC_BASE + PLIC_REG_ENABLE);
     trans.set_data_ptr((unsigned char*)&data);
     trans.set_data_length(4);
-    
     socket->b_transport(trans, delay);
     check_response(trans);
     wait(delay);
 
-    // 2. Wait for NVDLA Interrupt
-    std::cout << sc_time_stamp() << " CPU: waiting for NVDLA IRQ...\n";
-    if (!irq_in.read()) {
-        wait(irq_in.posedge_event());
-    }
-    std::cout << sc_time_stamp() << " CPU: received NVDLA IRQ\n";
-
-    // 3. Kick DMA
-    std::cout << sc_time_stamp() << " CPU: kicking DMA...\n";
+    // 1. Kick NVDLA via Register
+    std::cout << sc_time_stamp() << " CPU: kicking NVDLA (Register write)...\n";
+    data = 1;
     delay = SC_ZERO_TIME;
     trans.set_command(tlm::TLM_WRITE_COMMAND);
-    trans.set_address(DMA_BASE);
+    trans.set_address(NVDLA_BASE + NVDLA_REG_START);
     trans.set_data_ptr((unsigned char*)&data);
-    trans.set_data_length(4);
-    
     socket->b_transport(trans, delay);
     check_response(trans);
     wait(delay);
 
-    // 4. Wait for DMA Interrupt
-    std::cout << sc_time_stamp() << " CPU: waiting for DMA IRQ...\n";
-    wait(irq_in.posedge_event());
-    std::cout << sc_time_stamp() << " CPU: received DMA IRQ. Task finished.\n";
+    // Loop for handling PLIC interrupts
+    bool nvdla_done = false;
+    bool dma_done = false;
 
-    // --- Optional Error Injection Test ---
-    /*
-    std::cout << sc_time_stamp() << " CPU: Testing error handling with bad address...\n";
-    trans.set_address(0xF0000000);
-    socket->b_transport(trans, delay);
-    check_response(trans);
-    */
+    while (!(nvdla_done && dma_done)) {
+        if (!irq_in.read()) {
+            wait(irq_in.posedge_event());
+        }
+
+        // Claim IRQ from PLIC
+        uint32_t irq_id = 0;
+        delay = SC_ZERO_TIME;
+        trans.set_command(tlm::TLM_READ_COMMAND);
+        trans.set_address(PLIC_BASE + PLIC_REG_CLAIM);
+        trans.set_data_ptr((unsigned char*)&irq_id);
+        socket->b_transport(trans, delay);
+        check_response(trans);
+        wait(delay);
+
+        if (irq_id == IRQ_ID_NVDLA) {
+            std::cout << sc_time_stamp() << " CPU: Handling NVDLA Interrupt\n";
+            nvdla_done = true;
+
+            // Kick DMA (Register-level configuration)
+            std::cout << sc_time_stamp() << " CPU: Programming DMA (SRC=0x1000, DST=0x2000, LEN=4)...\n";
+            
+            uint32_t src = 0x1000;
+            uint32_t dst = 0x2000;
+            uint32_t len = 4;
+            uint32_t ctrl = 1; // Start
+
+            // Set SRC
+            trans.set_command(tlm::TLM_WRITE_COMMAND);
+            trans.set_address(DMA_BASE + DMA_REG_SRC);
+            trans.set_data_ptr((unsigned char*)&src);
+            socket->b_transport(trans, delay);
+            wait(delay);
+
+            // Set DST
+            trans.set_address(DMA_BASE + DMA_REG_DST);
+            trans.set_data_ptr((unsigned char*)&dst);
+            socket->b_transport(trans, delay);
+            wait(delay);
+
+            // Set LEN
+            trans.set_address(DMA_BASE + DMA_REG_LEN);
+            trans.set_data_ptr((unsigned char*)&len);
+            socket->b_transport(trans, delay);
+            wait(delay);
+
+            // Set CTRL (Start)
+            trans.set_address(DMA_BASE + DMA_REG_CTRL);
+            trans.set_data_ptr((unsigned char*)&ctrl);
+            socket->b_transport(trans, delay);
+            wait(delay);
+
+        } else if (irq_id == IRQ_ID_DMA) {
+            std::cout << sc_time_stamp() << " CPU: Handling DMA Interrupt\n";
+            dma_done = true;
+        }
+
+        // Complete IRQ in PLIC
+        if (irq_id != 0) {
+            delay = SC_ZERO_TIME;
+            trans.set_command(tlm::TLM_WRITE_COMMAND);
+            trans.set_address(PLIC_BASE + PLIC_REG_COMPLETE);
+            trans.set_data_ptr((unsigned char*)&irq_id);
+            socket->b_transport(trans, delay);
+            check_response(trans);
+            wait(delay);
+        }
+    }
+
+    std::cout << sc_time_stamp() << " CPU: All tasks finished via PLIC handshaking.\n";
 }
 
 void CPU::check_response(tlm::tlm_generic_payload& trans)

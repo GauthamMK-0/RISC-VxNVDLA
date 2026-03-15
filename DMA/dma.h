@@ -25,7 +25,13 @@ struct DMA : sc_module {
     virtual void b_transport(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
-    sc_event trig_event;
+    sc_event start_event;
+    
+    // Register file
+    uint32_t src_addr;
+    uint32_t dst_addr;
+    uint32_t length;
+    uint32_t ctrl;
 };
 
 #endif

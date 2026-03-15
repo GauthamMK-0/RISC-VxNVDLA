@@ -4,11 +4,13 @@
 // Topology:
 //
 //   CPU (initiator) ──┐
-//                     ├──► AXI_IC ──┬──► NVDLA  (0x40000000 – 0x4FFFFFFF)
-//   DMA (initiator) ──┘             ├──► DMA    (0x50000000 – 0x5FFFFFFF)
-//                                   └──► MEMORY  (0x00000000 – 0x0FFFFFFF)
+//                     ├──► AXI_IC ──┬──► NVDLA  (0x40000000)
+//   DMA (initiator) ──┘             ├──► DMA    (0x50000000)
+//                                   ├──► PLIC   (0x60000000)
+//                                   └──► MEMORY (0x00000000)
 //
-//   NVDLA.irq ──┬──► IRQ controller ──► cpu_irq_sig (sc_signal) ──► CPU.irq_in
+//   NVDLA.irq ──┐
+//               ├──► PLIC ──► cpu_irq_sig ──► CPU.irq_in
 //   DMA.irq_out ┘
 //
 // ============================================================================
@@ -19,7 +21,7 @@
 #include "../Memory/memory.h"
 #include "../NVDLA/nvdla.h"
 #include "../bus/axi_interconnect.h"
-#include "../IRQ/irq.h"
+#include "../IRQ/plic.h"
 
 using namespace sc_core;
 
@@ -36,7 +38,7 @@ int sc_main(int argc, char* argv[])
     AXI_IC  ic     ("AXI_IC");
     NVDLA   nvdla  ("NVDLA");
     MEMORY  memory ("MEMORY");
-    IRQ     irq_ctrl("IRQ");
+    PLIC    plic   ("PLIC");
 
     // ── TLM socket bindings ──────────────────────────────────────────────────
     // Masters → Interconnect slave ports
@@ -47,20 +49,20 @@ int sc_main(int argc, char* argv[])
     ic.nvdla_socket   .bind(nvdla.socket);
     ic.mem_socket     .bind(memory.socket);
     ic.dma_ctrl_socket.bind(dma.target_socket);
+    ic.plic_socket    .bind(plic.socket);
 
     // ── Interrupt signal bindings ────────────────────────────────────────────
     nvdla.irq       (nvdla_irq_sig);
     dma.irq_out     (dma_irq_sig);
     
-    irq_ctrl.nvdla_irq(nvdla_irq_sig);
-    irq_ctrl.dma_irq  (dma_irq_sig);
-    irq_ctrl.cpu_irq  (cpu_irq_sig);
+    plic.nvdla_irq  (nvdla_irq_sig);
+    plic.dma_irq    (dma_irq_sig);
+    plic.cpu_irq    (cpu_irq_sig);
     
     cpu.irq_in      (cpu_irq_sig);
 
-    // ── Run simulation long enough to capture all events ─────────────────────
-    // Timeline: CPU@10ns kicks NVDLA, waits IRQ, then kicks DMA, waits IRQ.
-    sc_start(1000, SC_NS);
+    // ── Run simulation ───────────────────────────────────────────────────────
+    sc_start(2000, SC_NS);
 
     std::cout << "\n[sim] Simulation complete at "
               << sc_time_stamp() << std::endl;

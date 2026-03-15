@@ -18,6 +18,7 @@ struct AXI_IC : sc_module {
     tlm_utils::simple_initiator_socket<AXI_IC> mem_socket;
     tlm_utils::simple_initiator_socket<AXI_IC> nvdla_socket;
     tlm_utils::simple_initiator_socket<AXI_IC> dma_ctrl_socket;
+    tlm_utils::simple_initiator_socket<AXI_IC> plic_socket;
 
     SC_CTOR(AXI_IC);
 

@@ -1,4 +1,5 @@
 #include "nvdla.h"
+#include "../common/soc_map.h"
 #include <iostream>
 
 NVDLA::NVDLA(sc_module_name name)
@@ -28,7 +29,7 @@ void NVDLA::b_transport(tlm::tlm_generic_payload& trans,
 
         switch (addr)
         {
-            case 0x0:     // CTRL register
+            case NVDLA_REG_START:  // START register
                 ctrl = val;
                 if (ctrl & 0x1)
                     sc_spawn(sc_bind(&NVDLA::compute, this));
@@ -44,7 +45,7 @@ void NVDLA::b_transport(tlm::tlm_generic_payload& trans,
 
         switch (addr)
         {
-            case 0x4:     // STATUS register
+            case NVDLA_REG_STATUS:  // STATUS register
                 val = status;
                 break;
 

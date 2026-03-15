@@ -7,7 +7,8 @@ AXI_IC::AXI_IC(sc_module_name name)
   dma_socket("dma_socket"),
   mem_socket("mem_socket"),
   nvdla_socket("nvdla_socket"),
-  dma_ctrl_socket("dma_ctrl_socket")
+  dma_ctrl_socket("dma_ctrl_socket"),
+  plic_socket("plic_socket")
 {
     cpu_socket.register_b_transport(this, &AXI_IC::b_transport);
     dma_socket.register_b_transport(this, &AXI_IC::b_transport);
@@ -29,6 +30,11 @@ void AXI_IC::b_transport(int id,
     {
         trans.set_address(addr - DMA_BASE);
         dma_ctrl_socket->b_transport(trans, delay);
+    }
+    else if (addr >= PLIC_BASE && addr < (PLIC_BASE + PLIC_SIZE))
+    {
+        trans.set_address(addr - PLIC_BASE);
+        plic_socket->b_transport(trans, delay);
     }
     else if (addr >= DRAM_BASE && addr < (DRAM_BASE + DRAM_SIZE))
     {
