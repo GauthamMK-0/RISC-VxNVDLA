@@ -16,6 +16,11 @@ struct CPU : sc_module {
     SC_CTOR(CPU);
 
     void run();
+
+private:
+    uint8_t l1_scratchpad[1024]; // 1KB Local "Cache"
+    
+    void check_response(tlm::tlm_generic_payload& trans);
 };
 
 #endif
