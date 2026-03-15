@@ -1,4 +1,5 @@
 #include "axi_interconnect.h"
+#include "../common/soc_map.h"
 
 AXI_IC::AXI_IC(sc_module_name name)
 : sc_module(name),
@@ -18,22 +19,25 @@ void AXI_IC::b_transport(int id,
 {
     auto addr = trans.get_address();
 
-    // Address map:
-    //   0x40000000 – 0x4FFFFFFF  →  NVDLA registers
-    //   0x50000000 – 0x5FFFFFFF  →  DMA registers
-    //   everything else          →  DRAM
-    if (addr >= 0x40000000 && addr < 0x50000000)
+    // Address map routing using soc_map.h
+    if (addr >= NVDLA_BASE && addr < (NVDLA_BASE + NVDLA_SIZE))
     {
-        trans.set_address(addr - 0x40000000);
+        trans.set_address(addr - NVDLA_BASE);
         nvdla_socket->b_transport(trans, delay);
     }
-    else if (addr >= 0x50000000 && addr < 0x60000000)
+    else if (addr >= DMA_BASE && addr < (DMA_BASE + DMA_SIZE))
     {
-        trans.set_address(addr - 0x50000000);
+        trans.set_address(addr - DMA_BASE);
         dma_ctrl_socket->b_transport(trans, delay);
+    }
+    else if (addr >= DRAM_BASE && addr < (DRAM_BASE + DRAM_SIZE))
+    {
+        trans.set_address(addr - DRAM_BASE);
+        mem_socket->b_transport(trans, delay);
     }
     else
     {
-        mem_socket->b_transport(trans, delay);
+        // Default error response for unmapped regions
+        trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
     }
 }

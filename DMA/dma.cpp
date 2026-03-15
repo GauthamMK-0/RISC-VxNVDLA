@@ -1,4 +1,5 @@
 #include "dma.h"
+#include "../common/soc_map.h"
 #include <iostream>
 #include <cstring>
 
@@ -15,7 +16,7 @@ void DMA::run()
 {
     while (true) {
         wait(trig_event);
-        std::cout << sc_time_stamp() << " DMA triggered\n";
+        std::cout << sc_time_stamp() << " DMA: triggered\n";
 
         static uint32_t dma_payload = 0xDEADBEEF;
 
@@ -23,7 +24,7 @@ void DMA::run()
         sc_time delay = SC_ZERO_TIME;
 
         trans.set_command(tlm::TLM_WRITE_COMMAND);
-        trans.set_address(0x0);                        // DRAM base address
+        trans.set_address(DRAM_BASE);  // Using soc_map
         trans.set_data_ptr((unsigned char*)&dma_payload);
         trans.set_data_length(4);
         trans.set_streaming_width(4);
@@ -32,12 +33,13 @@ void DMA::run()
         trans.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 
         mem_socket->b_transport(trans, delay);
-        wait(delay);   // consume annotated DRAM latency (50 ns)
+        wait(delay);
 
         if (trans.get_response_status() == tlm::TLM_OK_RESPONSE) {
-            std::cout << sc_time_stamp() << " DMA wrote memory\n";
+            std::cout << sc_time_stamp() << " DMA: wrote memory successfully\n";
         } else {
-            std::cout << sc_time_stamp() << " DMA ERROR: bad response\n";
+            std::cerr << sc_time_stamp() << " DMA ERROR: " 
+                      << trans.get_response_string() << "\n";
         }
 
         // Completion interrupt
