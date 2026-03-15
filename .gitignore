@@ -1,29 +1,13 @@
-# SystemC build files
+# Binaries and Objects
 *.o
-*.d
 soc_sim
 
-# Logs and output files
-logs/
-*.log
-*.csv
-
-# Backup files
-*~
-*.swp
-*.swo
-
-# OS-specific
-.DS_Store
-Thumbs.db
-
-# IDE / editor configs
+# Temporary / System files
+.gemini/
 .vscode/
-.idea/
-*.user
-*.vscode/
-*.code-workspace
+*.swp
+*~
 
-# Misc
-*.bak
-*.tmp
+# Documentation
+# Ignore all markdown files
+*.md
