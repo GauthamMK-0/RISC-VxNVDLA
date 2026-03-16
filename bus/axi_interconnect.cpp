@@ -5,6 +5,7 @@ AXI_IC::AXI_IC(sc_module_name name)
 : sc_module(name),
   cpu_socket("cpu_socket"),
   dma_socket("dma_socket"),
+  nvdla_dbb_socket("nvdla_dbb_socket"),
   mem_socket("mem_socket"),
   nvdla_socket("nvdla_socket"),
   dma_ctrl_socket("dma_ctrl_socket"),
@@ -12,6 +13,7 @@ AXI_IC::AXI_IC(sc_module_name name)
 {
     cpu_socket.register_b_transport(this, &AXI_IC::b_transport);
     dma_socket.register_b_transport(this, &AXI_IC::b_transport);
+    nvdla_dbb_socket.register_b_transport(this, &AXI_IC::b_transport);
 }
 
 void AXI_IC::b_transport(int id,

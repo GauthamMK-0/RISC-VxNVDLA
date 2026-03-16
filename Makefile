@@ -12,10 +12,18 @@ CXXFLAGS = -std=c++17 \
 
 LDFLAGS  = -L$(SYSTEMC_LIB) -lsystemc -lm
 
+NVDLA_SRC = NVDLA/nvdla_top.cpp \
+            NVDLA/nvdla_scheduler.cpp \
+            NVDLA/nvdla_csb.cpp \
+            NVDLA/nvdla_cdma.cpp \
+            NVDLA/nvdla_compute.cpp \
+            NVDLA/nvdla_dma.cpp \
+            NVDLA/nvdla_common.cpp
+
 SRC = CPU/cpu.cpp \
       DMA/dma.cpp \
       Memory/memory.cpp \
-      NVDLA/nvdla.cpp \
+      $(NVDLA_SRC) \
       bus/axi_interconnect.cpp \
       IRQ/plic.cpp \
       top/top.cpp

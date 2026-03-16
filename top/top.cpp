@@ -3,11 +3,11 @@
 //
 // Topology:
 //
-//   CPU (initiator) ──┐
-//                     ├──► AXI_IC ──┬──► NVDLA  (0x40000000)
-//   DMA (initiator) ──┘             ├──► DMA    (0x50000000)
-//                                   ├──► PLIC   (0x60000000)
-//                                   └──► MEMORY (0x00000000)
+//   CPU (initiator) ────┐
+//                       ├──► AXI_IC ──┬──► NVDLA  (0x40000000)
+//   DMA (initiator) ────┤             ├──► DMA    (0x50000000)
+//                       │             ├──► PLIC   (0x60000000)
+//   NVDLA.dbb (init) ───┘             └──► MEMORY (0x00000000)
 //
 //   NVDLA.irq ──┐
 //               ├──► PLIC ──► cpu_irq_sig ──► CPU.irq_in
@@ -44,6 +44,7 @@ int sc_main(int argc, char* argv[])
     // Masters → Interconnect slave ports
     cpu.socket      .bind(ic.cpu_socket);
     dma.mem_socket  .bind(ic.dma_socket);
+    nvdla.dbb_socket.bind(ic.nvdla_dbb_socket);
 
     // Interconnect master ports → Slaves
     ic.nvdla_socket   .bind(nvdla.socket);
@@ -62,7 +63,7 @@ int sc_main(int argc, char* argv[])
     cpu.irq_in      (cpu_irq_sig);
 
     // ── Run simulation ───────────────────────────────────────────────────────
-    sc_start(2000, SC_NS);
+    sc_start(3000, SC_NS);
 
     std::cout << "\n[sim] Simulation complete at "
               << sc_time_stamp() << std::endl;
