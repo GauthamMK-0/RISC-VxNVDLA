@@ -23,9 +23,16 @@ const uint32_t DMA_REG_DST      = 0x04;
 const uint32_t DMA_REG_LEN      = 0x08;
 const uint32_t DMA_REG_CTRL     = 0x0C; // Bit 0: Start
 
-// NVDLA Registers
-const uint32_t NVDLA_REG_START  = 0x00;
-const uint32_t NVDLA_REG_STATUS = 0x04; // 0: Idle, 1: Busy
+// NVDLA Registers (Modular)
+const uint32_t NVDLA_REG_START    = 0x00;
+const uint32_t NVDLA_REG_CDMA_SRC = 0x10;
+const uint32_t NVDLA_REG_COMP_CFG = 0x14;
+const uint32_t NVDLA_REG_WR_DST   = 0x18;
+const uint32_t NVDLA_REG_BDMA_SRC = 0x20;
+const uint32_t NVDLA_REG_BDMA_DST = 0x24;
+const uint32_t NVDLA_REG_BDMA_LEN = 0x28;
+const uint32_t NVDLA_REG_BDMA_CTRL= 0x2C;
+const uint32_t NVDLA_REG_STATUS   = 0x40; // 0: Idle, 1: Busy
 
 // PLIC Registers
 const uint32_t PLIC_REG_SOURCE    = 0x00; // Pending bitmask
