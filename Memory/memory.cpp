@@ -1,10 +1,17 @@
 #include "memory.h"
+#include "../common/soc_map.h"
 #include <cstring>
 
 MEMORY::MEMORY(sc_module_name name)
 : sc_module(name), socket("socket")
 {
     socket.register_b_transport(this, &MEMORY::b_transport);
+    mem = new unsigned char[DRAM_SIZE];
+}
+
+MEMORY::~MEMORY()
+{
+    delete[] mem;
 }
 
 void MEMORY::b_transport(tlm::tlm_generic_payload& trans, sc_time& delay)

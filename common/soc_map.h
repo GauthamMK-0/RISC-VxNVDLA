@@ -1,19 +1,33 @@
 #ifndef SOC_MAP_H
 #define SOC_MAP_H
 
+// Undefine conflicting Spike macros
+#ifdef DRAM_BASE
+#undef DRAM_BASE
+#endif
+#ifdef DRAM_SIZE
+#undef DRAM_SIZE
+#endif
+#ifdef PLIC_BASE
+#undef PLIC_BASE
+#endif
+#ifdef PLIC_SIZE
+#undef PLIC_SIZE
+#endif
+
 #include <systemc>
 
 // Base Addresses
 const uint64_t DRAM_BASE    = 0x00000000;
-const uint64_t DRAM_SIZE    = 0x10000000; // 256 MB
+const uint64_t DRAM_SIZE    = 0x100000000; // 4 GB
 
-const uint64_t NVDLA_BASE   = 0x40000000;
+const uint64_t NVDLA_BASE   = 0x100000000;
 const uint64_t NVDLA_SIZE   = 0x00100000; // 1 MB
 
-const uint64_t DMA_BASE     = 0x50000000;
+const uint64_t DMA_BASE     = 0x100100000;
 const uint64_t DMA_SIZE     = 0x00100000; // 1 MB
 
-const uint64_t PLIC_BASE    = 0x60000000;
+const uint64_t PLIC_BASE    = 0x100200000;
 const uint64_t PLIC_SIZE    = 0x00100000; // 1 MB
 
 // Register Offsets
