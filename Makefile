@@ -4,13 +4,18 @@ CXX      = g++
 # SystemC 2.3.4 is installed as a system package
 SYSTEMC_INC = /usr/include
 SYSTEMC_LIB = /usr/lib/x86_64-linux-gnu
+RISCV_HOME  = /opt/riscv
 
 CXXFLAGS = -std=c++17 \
            -I. \
            -I$(SYSTEMC_INC) \
+           -I$(RISCV_HOME)/include \
            -Wall -O2
 
-LDFLAGS  = -L$(SYSTEMC_LIB) -lsystemc -lm
+LDFLAGS  = -L$(SYSTEMC_LIB) -lsystemc \
+           -L$(RISCV_HOME)/lib -lriscv -lfesvr \
+           -Wl,-rpath,$(RISCV_HOME)/lib \
+           -lm
 
 NVDLA_SRC = NVDLA/nvdla_top.cpp \
             NVDLA/nvdla_scheduler.cpp \

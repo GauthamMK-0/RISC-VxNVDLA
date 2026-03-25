@@ -27,13 +27,16 @@ using namespace sc_core;
 
 int sc_main(int argc, char* argv[])
 {
+    const char* elf_file = (argc > 1) ? argv[1] : "test.elf";
+
     // ── Signals ──────────────────────────────────────────────────────────────
     sc_signal<bool> nvdla_irq_sig("nvdla_irq_sig");
     sc_signal<bool> dma_irq_sig  ("dma_irq_sig");
     sc_signal<bool> cpu_irq_sig  ("cpu_irq_sig");
+    sc_signal<bool> dummy_irq    ("dummy_irq");
 
     // ── Module instantiation ─────────────────────────────────────────────────
-    CPU     cpu    ("CPU");
+    CPU     cpu    ("CPU", elf_file);
     DMA     dma    ("DMA");
     AXI_IC  ic     ("AXI_IC");
     NVDLA   nvdla  ("NVDLA");
@@ -63,7 +66,8 @@ int sc_main(int argc, char* argv[])
     cpu.irq_in      (cpu_irq_sig);
 
     // ── Run simulation ───────────────────────────────────────────────────────
-    sc_start(3000, SC_NS);
+    std::cout << "Starting sc_start(20, SC_US)..." << std::endl;
+    sc_start(20, SC_US);
 
     std::cout << "\n[sim] Simulation complete at "
               << sc_time_stamp() << std::endl;
