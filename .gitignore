@@ -11,3 +11,8 @@ soc_sim
 # Documentation
 # Ignore all markdown files
 *.md
+
+*.c
+*.elf
+*.ld
+*.txt
